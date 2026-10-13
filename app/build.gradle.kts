@@ -1,6 +1,7 @@
 plugins {
+    // AGP 9 內建 Kotlin 支援：再套 org.jetbrains.kotlin.android 會直接被擋下來
+    // （CI 那輪的訊息就是這個），只留 compose 編譯器外掛。
     id("com.android.application")
-    id("org.jetbrains.kotlin.android")
     id("org.jetbrains.kotlin.plugin.compose")
 }
 
@@ -59,12 +60,6 @@ android {
     }
 }
 
-kotlin {
-    compilerOptions {
-        jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
-    }
-}
-
 val stageRimeData = tasks.register("stageRimeData", Sync::class) {
     listOf("prelude", "luna-pinyin", "stroke", "essay").forEach { dir ->
         from("data/rime/$dir") { include("**/*.yaml", "**/*.txt") }
@@ -85,11 +80,13 @@ tasks.matching { it.name.startsWith("merge") && it.name.contains("Assets") }
 
 dependencies {
     implementation("androidx.core:core-ktx:1.17.0")
-    // BOM 2026.09.00 鎖的是 material3 1.4.0（M3 Expressive 的那一版）＋ compose 1.12.1，
-    // 跟 nashira 用的同一代，因此這裡只寫 BOM、不逐個標版本。
+    // BOM 2026.09.00 鎖的 material3 是 1.4.0，實查它的 classes.jar 裡
+    // MaterialShapes／MotionScheme.expressive()／ShapeDefaults.ExtraExtraLarge 都還是 internal
+    // （名字帶 $material3 後綴），外部叫不到。M3 Expressive 真正公開的那批在 1.5.x，
+    // 所以 material3 單獨指定，其餘（ui／foundation）仍走 BOM。
     implementation(platform("androidx.compose:compose-bom:2026.09.00"))
+    implementation("androidx.compose.material3:material3:1.5.0-beta01")
     implementation("androidx.compose.ui:ui")
     implementation("androidx.compose.foundation:foundation")
-    implementation("androidx.compose.material3:material3")
     debugImplementation("androidx.compose.ui:ui-tooling")
 }

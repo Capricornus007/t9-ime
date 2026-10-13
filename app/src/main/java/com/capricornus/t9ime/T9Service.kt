@@ -1,65 +1,85 @@
 package com.capricornus.t9ime
 
 import android.inputmethodservice.InputMethodService
-import android.text.TextUtils
+import android.os.Handler
+import android.os.Looper
+import android.os.SystemClock
+import android.view.KeyEvent
 import android.view.View
-import android.widget.Button
-import android.widget.HorizontalScrollView
-import android.widget.LinearLayout
-import android.widget.TextView
+import android.view.inputmethod.EditorInfo
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.platform.ComposeView
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleOwner
+import androidx.lifecycle.LifecycleRegistry
+import androidx.lifecycle.SavedStateRegistryController
+import androidx.lifecycle.setViewTreeLifecycleOwner
+import androidx.lifecycle.setViewTreeSavedStateRegistryOwner
+import androidx.savedstate.SavedStateRegistry
+import androidx.savedstate.SavedStateRegistryOwner
+import com.capricornus.t9ime.ui.NineKeyKeyboard
+import com.capricornus.t9ime.ui.T9Theme
 
 /**
- * 九鍵第一版（真引擎）：3×4 數字鍵＋上方候選列，消歧交給 librime。
+ * 九鍵輸入法服務（真 librime 引擎＋Compose／Material 3 Expressive 鍵盤層）。
  *
- * 按鍵只送數字 keysym（2=abc 3=def … 9=wxyz，跟 gboard／搜狗一致，不做多擊循環），
- * 方案 `t9_pinyin` 的 speller/algebra 把拼音整體轉寫成數字碼，候選順序就是詞庫詞頻。
- * 左側「已按碼欄」與兩套功能鍵佈局（可切換）是接下來的第一件事，
- * 規格與參考實作在 `third_party/fcitx5-t9/`（T9SideRailUi）與
- * `third_party/trime-9key-config/trime.yaml`（35 處 t9_pick_* 鍵位）。
+ * 按鍵只送數字 keysym（2=abc … 9=wxyz，跟 gboard／搜狗一致，不做多擊循環），
+ * 消歧由方案 `t9_pinyin` 的 speller/algebra 與詞庫詞頻決定。
+ *
+ * Compose 需要 ViewTree 上有 lifecycle／savedState 兩個 owner，而 InputMethodService
+ * 不是 Activity，所以這裡自己實作兩個介面再掛到 ComposeView 上（照 fcitx5-android 的做法）。
  */
-class T9Service : InputMethodService() {
+class T9Service : InputMethodService(), LifecycleOwner, SavedStateRegistryOwner {
 
-    private lateinit var preedit: TextView
-    private lateinit var candidateRow: LinearLayout
-    private val mainHandler = android.os.Handler(android.os.Looper.getMainLooper())
+    private val registry by lazy { LifecycleRegistry(this) }
+    override val lifecycle: Lifecycle get() = registry
 
-    private val keys = listOf(
-        listOf("1", "2 abc", "3 def", "4 ghi"),
-        listOf("5 jkl", "6 mno", "7 pqrs", "8 tuv"),
-        listOf("9 wxyz", "0", "⌫", "⏎"),
+    private val savedStateController = SavedStateRegistryController.create(this)
+    override val savedStateRegistry: SavedStateRegistry get() = savedStateController.savedStateRegistry
+
+    private val mainHandler = Handler(Looper.getMainLooper())
+
+    private var uiState by mutableStateOf(KeyboardState())
+
+    private data class KeyboardState(
+        val code: String = "",
+        val candidates: List<String> = emptyList(),
     )
 
-    override fun onCreateInputView(): View {
-        val root = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
-        preedit = TextView(this).apply {
-            textSize = 18f
-            setPadding(24, 12, 24, 4)
-            maxLines = 1
-            ellipsize = TextUtils.TruncateAt.START
+    override fun onCreate() {
+        super.onCreate()
+        savedStateController.performRestore(null)
+        registry.currentState = Lifecycle.State.RESUMED
+        window.window?.decorView?.let {
+            it.setViewTreeLifecycleOwner(this)
+            it.setViewTreeSavedStateRegistryOwner(this)
         }
-        candidateRow = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
-        root.addView(preedit)
-        root.addView(HorizontalScrollView(this).apply { addView(candidateRow) })
-        val grid = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
-        for (row in keys) {
-            val line = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
-            for (label in row) {
-                val digit = label.trim().substringBefore(' ')
-                val button = Button(this).apply {
-                    text = label
-                    isAllCaps = false
-                    textSize = 16f
-                    setOnClickListener { onKey(digit) }
-                }
-                line.addView(button, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
-            }
-            grid.addView(line)
-        }
-        root.addView(grid)
-        return root
     }
 
-    override fun onStartInput(attribute: android.view.inputmethod.EditorInfo?, restarting: Boolean) {
+    override fun onDestroy() {
+        registry.currentState = Lifecycle.State.DESTROYED
+        RimeEngine.onDeployed = null
+        super.onDestroy()
+    }
+
+    override fun onCreateInputView(): View = ComposeView(this).apply {
+        setViewTreeLifecycleOwner(this@T9Service)
+        setViewTreeSavedStateRegistryOwner(this@T9Service)
+        setContent {
+            T9Theme {
+                NineKeyKeyboard(
+                    code = uiState.code,
+                    candidates = uiState.candidates,
+                    onKey = ::onKey,
+                    onCandidate = ::onCandidate,
+                )
+            }
+        }
+    }
+
+    override fun onStartInput(attribute: EditorInfo?, restarting: Boolean) {
         super.onStartInput(attribute, restarting)
         RimeEngine.stageAssets(this)
         RimeEngine.startup(this)
@@ -79,10 +99,7 @@ class T9Service : InputMethodService() {
         if (!RimeEngine.ready) return
         val consumed = when (digit) {
             "⌫" -> RimeEngine.sendKey(RimeEngine.KEY_BACKSPACE)
-            "⏎" -> {
-                // 有編碼時 Enter 交給 rime（可能是上屏候選），空欄時才是送出換行。
-                if (RimeEngine.getOption("ascii_mode")) false else RimeEngine.sendKey(RimeEngine.KEY_RETURN)
-            }
+            "⏎" -> !RimeEngine.getOption("ascii_mode") && RimeEngine.sendKey(RimeEngine.KEY_RETURN)
             else -> if (digit.isNotEmpty() && digit[0].isDigit()) {
                 // 數字字元本身的碼位就是它的 X11 keysym（'2' = 0x32）。
                 RimeEngine.sendKey(digit[0].code)
@@ -91,15 +108,23 @@ class T9Service : InputMethodService() {
         drainCommit()
         refresh()
         if (!consumed && digit == "⏎") {
-            val now = android.os.SystemClock.uptimeMillis()
-            val down = android.view.KeyEvent(now, now, android.view.KeyEvent.ACTION_DOWN, android.view.KeyEvent.KEYCODE_ENTER, 0)
-            val up = android.view.KeyEvent(now, now, android.view.KeyEvent.ACTION_UP, android.view.KeyEvent.KEYCODE_ENTER, 0)
-            currentInputConnection?.sendKeyEvent(down)
-            currentInputConnection?.sendKeyEvent(up)
+            // rime 沒吃掉 Enter（英文模式、或欄位是「搜尋／完成」這種動作鍵）時，
+            // 才自己送實體換行；InputConnection 沒有 sendEditorAction，只能送按鍵事件。
+            val now = SystemClock.uptimeMillis()
+            val connection = currentInputConnection ?: return
+            connection.sendKeyEvent(KeyEvent(now, now, KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_ENTER, 0))
+            connection.sendKeyEvent(KeyEvent(now, now, KeyEvent.ACTION_UP, KeyEvent.KEYCODE_ENTER, 0))
         }
     }
 
-    /** rime 決定要上屏的東西（選字、換頁後直接成詞、標點上屏）都走這裡，不這樣讀會漏字。 */
+    private fun onCandidate(index: Int) {
+        if (RimeEngine.selectCandidate(index)) {
+            drainCommit()
+            refresh()
+        }
+    }
+
+    /** rime 決定要上屏的東西（選字、成詞、標點上屏）都走這裡，不這樣讀會漏字。 */
     private fun drainCommit() {
         val text = RimeEngine.commitText() ?: return
         currentInputConnection?.commitText(text, 1)
@@ -107,27 +132,9 @@ class T9Service : InputMethodService() {
 
     private fun refresh() {
         if (!RimeEngine.ready) return
-        preedit.text = RimeEngine.preedit()
-        candidateRow.removeAllViews()
-        for ((index, candidate) in RimeEngine.candidates().withIndex()) {
-            val b = Button(this).apply {
-                text = candidate.text
-                isAllCaps = false
-                textSize = 18f
-                setOnClickListener {
-                    if (RimeEngine.selectCandidate(index)) {
-                        drainCommit()
-                        refresh()
-                    }
-                }
-            }
-            candidateRow.addView(
-                b,
-                LinearLayout.LayoutParams(
-                    LinearLayout.LayoutParams.WRAP_CONTENT,
-                    LinearLayout.LayoutParams.WRAP_CONTENT,
-                ),
-            )
-        }
+        uiState = KeyboardState(
+            code = RimeEngine.preedit(),
+            candidates = RimeEngine.candidates().map { it.text },
+        )
     }
 }
