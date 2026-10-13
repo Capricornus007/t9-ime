@@ -64,10 +64,10 @@ class T9Service : InputMethodService() {
         when (digit) {
             "⌫" -> { if (code.isNotEmpty()) code.deleteCharAt(code.length - 1) }
             "⏎" -> {
-                // InputConnection 沒有 sendEditorAction 這種方法（上一次就是紅在這裡）；
-                // 換行要送實體按鍵事件。
-                val down = android.view.KeyEvent(android.view.KeyEvent.ACTION_DOWN, android.view.KeyEvent.KEYCODE_ENTER)
-                val up = android.view.KeyEvent.up(down)
+                // 換行送實體按鍵事件：InputConnection 沒有 sendEditorAction，KeyEvent 也沒有 up()。
+                val now = android.os.SystemClock.uptimeMillis()
+                val down = android.view.KeyEvent(now, now, android.view.KeyEvent.ACTION_DOWN, android.view.KeyEvent.KEYCODE_ENTER, 0)
+                val up = android.view.KeyEvent(now, now, android.view.KeyEvent.ACTION_UP, android.view.KeyEvent.KEYCODE_ENTER, 0)
                 currentInputConnection?.sendKeyEvent(down)
                 currentInputConnection?.sendKeyEvent(up)
                 clear()
