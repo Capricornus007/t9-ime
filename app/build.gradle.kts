@@ -1,6 +1,7 @@
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
+    id("org.jetbrains.kotlin.plugin.compose")
 }
 
 // rime 的資料檔（default.yaml、朙月拼音詞庫、essay、筆畫）以子模組放在 app/data/rime/，
@@ -8,12 +9,12 @@ plugins {
 // import_preset 與 import_tables，四個倉攤平才找得到。
 android {
     namespace = "com.capricornus.t9ime"
-    compileSdk = 35
+    compileSdk = 37
 
     defaultConfig {
         applicationId = "com.capricornus.t9ime"
         minSdk = 26
-        targetSdk = 35
+        targetSdk = 36
         versionCode = 1
         versionName = "0.2-librime"
         ndk { abiFilters += "arm64-v8a" }
@@ -36,6 +37,10 @@ android {
         release {
             isMinifyEnabled = false
         }
+    }
+
+    buildFeatures {
+        compose = true
     }
 
     externalNativeBuild {
@@ -79,5 +84,12 @@ tasks.matching { it.name.startsWith("merge") && it.name.contains("Assets") }
     .configureEach { dependsOn(stageRimeData, stageOpenccData) }
 
 dependencies {
-    implementation("androidx.core:core-ktx:1.13.1")
+    implementation("androidx.core:core-ktx:1.17.0")
+    // BOM 2026.09.00 鎖的是 material3 1.4.0（M3 Expressive 的那一版）＋ compose 1.12.1，
+    // 跟 nashira 用的同一代，因此這裡只寫 BOM、不逐個標版本。
+    implementation(platform("androidx.compose:compose-bom:2026.09.00"))
+    implementation("androidx.compose.ui:ui")
+    implementation("androidx.compose.foundation:foundation")
+    implementation("androidx.compose.material3:material3")
+    debugImplementation("androidx.compose.ui:ui-tooling")
 }

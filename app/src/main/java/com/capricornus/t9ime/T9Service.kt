@@ -21,6 +21,7 @@ class T9Service : InputMethodService() {
 
     private lateinit var preedit: TextView
     private lateinit var candidateRow: LinearLayout
+    private val mainHandler = android.os.Handler(android.os.Looper.getMainLooper())
 
     private val keys = listOf(
         listOf("1", "2 abc", "3 def", "4 ghi"),
@@ -65,7 +66,8 @@ class T9Service : InputMethodService() {
         RimeEngine.selectSchema("t9_pinyin")
         RimeEngine.onDeployed = {
             // 詞庫編完才選得到方案，選成功要回頭把候選列刷一次。
-            runOnUiThread {
+            // InputMethodService 沒有 runOnUiThread（那是 Activity 的東西），要自己丟主執行緒。
+            mainHandler.post {
                 RimeEngine.selectSchema("t9_pinyin")
                 refresh()
             }
