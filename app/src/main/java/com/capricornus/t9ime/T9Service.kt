@@ -46,6 +46,7 @@ class T9Service : InputMethodService(), LifecycleOwner, SavedStateRegistryOwner 
     private data class KeyboardState(
         val code: String = "",
         val candidates: List<String> = emptyList(),
+        val asciiMode: Boolean = false,
     )
 
     override fun onCreate() {
@@ -72,8 +73,10 @@ class T9Service : InputMethodService(), LifecycleOwner, SavedStateRegistryOwner 
                 NineKeyKeyboard(
                     code = uiState.code,
                     candidates = uiState.candidates,
+                    asciiMode = uiState.asciiMode,
                     onKey = ::onKey,
                     onCandidate = ::onCandidate,
+                    onToggleMode = ::toggleMode,
                 )
             }
         }
@@ -95,10 +98,17 @@ class T9Service : InputMethodService(), LifecycleOwner, SavedStateRegistryOwner 
         refresh()
     }
 
+    private fun toggleMode() {
+        if (!RimeEngine.ready) return
+        RimeEngine.setOption("ascii_mode", !RimeEngine.getOption("ascii_mode"))
+        refresh()
+    }
+
     private fun onKey(digit: String) {
         if (!RimeEngine.ready) return
         val consumed = when (digit) {
             "⌫" -> RimeEngine.sendKey(RimeEngine.KEY_BACKSPACE)
+            "␣" -> RimeEngine.sendKey(0x20)
             "⏎" -> !RimeEngine.getOption("ascii_mode") && RimeEngine.sendKey(RimeEngine.KEY_RETURN)
             else -> if (digit.isNotEmpty() && digit[0].isDigit()) {
                 // 數字字元本身的碼位就是它的 X11 keysym（'2' = 0x32）。
@@ -107,6 +117,10 @@ class T9Service : InputMethodService(), LifecycleOwner, SavedStateRegistryOwner 
         }
         drainCommit()
         refresh()
+        if (!consumed && digit == "␣") {
+            // 沒有候選時 rime 可能不吃空格，這時直接把空格打進去，別讓按鍵消失。
+            currentInputConnection?.commitText(" ", 1)
+        }
         if (!consumed && digit == "⏎") {
             // rime 沒吃掉 Enter（英文模式、或欄位是「搜尋／完成」這種動作鍵）時，
             // 才自己送實體換行；InputConnection 沒有 sendEditorAction，只能送按鍵事件。
@@ -135,6 +149,7 @@ class T9Service : InputMethodService(), LifecycleOwner, SavedStateRegistryOwner 
         uiState = KeyboardState(
             code = RimeEngine.preedit(),
             candidates = RimeEngine.candidates().map { it.text },
+            asciiMode = RimeEngine.getOption("ascii_mode"),
         )
     }
 }
