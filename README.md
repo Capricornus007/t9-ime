@@ -6,21 +6,33 @@ Android 輸入法，目標是**同時**做到五項，一項不砍：
    **不按時間淘汰**；釘選的永不刪除；歷史列表**可搜尋**。
 2. **日文離線手寫**：平假名／片假名／漢字，離線可用。
 3. **搜狗細胞詞庫**：自動偵測新詞庫 → 下載 → 轉換 → 匯入，且使用者詞頻留得住。
-4. **九宮格／九鍵**：按鍵只送抽象碼 2–9，哪個字母由詞典詞頻還原（跟 Google、搜狗同一套）；
+4. **九宮格／九鍵（只有中文用九鍵）**：按鍵只送抽象碼 2–9，哪個字母由詞典詞頻還原（跟 Google、搜狗同一套）；
    佈局照兩家做**兩套**（搜狗式塞進 3×4、gboard 式右側直排三鍵），設定裡可切；
    同鍵選字母**滑動與長按彈出都做**；**不做多擊循環**。
 5. **簡繁一鍵**：上屏後單點轉換（照搜狗 `simToTradWord` 的做法），不換輸入方案。
 
+**鍵盤佈局按語言分模式**（第 4 條只管中文）：中文＝九宮格；日文、英文、符號＝**26 鍵或各自的專屬佈局**，
+不跟著九鍵走。模式切換鍵與各家行為一律照 gboard／搜狗，不自己發明。
+
 另外一條貫穿全部的需求：**詞典與使用者詞頻必須是他自己那份、電腦與手機通用的 rime 配置**，
 所以底座走 librime（BSD-3），不綁任何一家客戶端的專有詞庫格式。
 
+**介面一律 Material 3 Expressive**（Compose + `androidx.compose.material3`）：形状、動效、
+按壓回饋、候選列的淡出邊界都走 M3E 那套 token，不用 Android 原生 View 硬湊。
+
 ## 目前狀態
 
-- `data/shared/`：九鍵方案 `t9_pinyin`、詞典 `t9_dict`、`lua/t9_preedit.lua`。
-  `t9_dict` 預設只 `import_tables: [luna_pinyin]`，不塞 46MB 的 rime-ice 詞庫；
-  要換詞庫改這一行。
+- `app/src/main/rime/`：九鍵方案 `t9_pinyin`、詞典 `t9_dict`、`lua/t9_preedit.lua`。
+  `t9_dict` 只 `import_tables: [luna_pinyin]`，也就是跟著使用者自己那份 rime 配置走；要換詞庫改這一行。
+- `app/src/main/jni/`：從 Trime 搬過來的 NDK 交叉編黏合層（CMake + `librime_jni/`），
+  librime／OpenCC／snappy／三個插件全部子模組化，路徑佈局與上游一致。
+- `app/data/rime/`：rime 官方資料（prelude／luna-pinyin／stroke／essay）子模組，打包前由
+  `stageRimeData` 匯成一個 `shared/` assets 目錄。
+- `app/src/main/java/com/osfans/trime/core/`：JNI 的 Kotlin 對面（類別名與建構子簽名逐字對上
+  `jni-utils.h`，改一邊就得同時改另一邊）。
+- `T9Service`：3×4 數字鍵＋候選列，按鍵送數字 keysym 給 librime。**這版是原生 View，
+  還沒上 Compose／M3E，也還沒有日文／英文／符號的 26 鍵模式**——那兩項是接下來的第一件事。
 - `tools/t9probe.cpp`：本機驗證探針（見下）。
-- 還**沒有** Android 端任何程式碼——鍵盤層、候選渲染、剪貼板、設定頁都是接下來的工作。
 
 ## 驗證方式：先在桌面上證明方案，再碰 APK
 

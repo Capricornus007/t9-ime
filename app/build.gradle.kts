@@ -29,9 +29,9 @@ android {
         cmake {
             path = file("src/main/jni/CMakeLists.txt")
             version = "3.31.6"
-            // 整串 librime 依賴靜態鏈進 libnative_rime_jni.so，APK 裡不留額外 .so。
+            // 整串 librime 依賴靜態鏈進 librime_jni.so，APK 裡只多這一個 .so。
             // ANDROID_PLATFORM 對齊 minSdk，lua 那個 ANDROID_PLATFORM>=24 的補丁因此不必打。
-            arguments += listOf(
+            args += listOf(
                 "-DANDROID_STL=c++_static",
                 "-DANDROID_PLATFORM=android-26",
                 "-DANDROID_SUPPORT_FLEXIBLE_PAGE_SIZES=ON",
@@ -46,19 +46,24 @@ android {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
-    kotlinOptions { jvmTarget = "17" }
 }
 
-val stageRimeData by tasks.registering(Sync::class) {
-    from("data/rime/prelude", "data/rime/luna-pinyin", "data/rime/stroke", "data/rime/essay") {
-        include("**/*.yaml", "**/*.txt")
+kotlin {
+    compilerOptions {
+        jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
     }
-    from("src/main/rime") { include("**/*") }
+}
+
+val stageRimeData = tasks.register("stageRimeData", Sync::class) {
+    listOf("prelude", "luna-pinyin", "stroke", "essay").forEach { dir ->
+        from("data/rime/$dir") { include("**/*.yaml", "**/*.txt") }
+    }
+    from("src/main/rime")
     into(layout.buildDirectory.dir("rime-assets/shared"))
 }
 
 // OpenCC 的簡繁對應表不進 git（子模組裡有），打包時複製；介面那個「繁／簡」切換執行期要讀它。
-val stageOpenccData by tasks.registering(Sync::class) {
+val stageOpenccData = tasks.register("stageOpenccData", Sync::class) {
     from("src/main/jni/OpenCC/data") { include("config/**", "dictionary/**") }
     into(layout.buildDirectory.dir("rime-assets/shared/opencc"))
     onlyIf { file("src/main/jni/OpenCC/data").exists() }
