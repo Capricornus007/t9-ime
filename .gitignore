@@ -4,8 +4,7 @@ local.properties
 *.iml
 .idea/
 .cxx/
-gradle/
-!gradle/wrapper/
+.gradle/
 *.class
 *.so
 !third_party/**/*.so
