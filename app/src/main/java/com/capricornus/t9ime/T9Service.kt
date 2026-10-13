@@ -63,7 +63,15 @@ class T9Service : InputMethodService() {
     private fun onKey(digit: String) {
         when (digit) {
             "⌫" -> { if (code.isNotEmpty()) code.deleteCharAt(code.length - 1) }
-            "⏎" -> { currentInputConnection?.sendEditorAction(0); clear() }
+            "⏎" -> {
+                // InputConnection 沒有 sendEditorAction 這種方法（上一次就是紅在這裡）；
+                // 換行要送實體按鍵事件。
+                val down = android.view.KeyEvent(android.view.KeyEvent.ACTION_DOWN, android.view.KeyEvent.KEYCODE_ENTER)
+                val up = android.view.KeyEvent.up(down)
+                currentInputConnection?.sendKeyEvent(down)
+                currentInputConnection?.sendKeyEvent(up)
+                clear()
+            }
             else -> if (digit.isNotEmpty() && digit[0].isDigit()) code.append(digit)
         }
         refresh()
