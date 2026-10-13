@@ -5,6 +5,7 @@
 
 | 目錄 | 來源（倉／commit） | 原始授權 | 搬進來的是什麼 |
 |---|---|---|---|
+| `third_party/trime-jni/` | `osfans/trime` | GPL-3.0 | **NDK 交叉編那一串的黏合層**：`CMakeLists.txt` 加 `cmake/` 下的 `Boost.cmake`、`FindBoost`、`FindGlog`、`FindLevelDb`、`FindMarisa`、`FindOpencc`、`FindYamlCpp`、`OpenccWorkarounds`、`Rime.cmake`，以及 `librime_jni/CMakeLists.txt`。這是「自己從零搭 Android 端」最花時間的一块（librime 要帶 OpenCC／snappy／glog／yaml-cpp／marisa／leveldb／boost 一起交叉編），直接沿用他們跑過的寫法。注意它原來的子模組路徑是 `app/src/main/jni/{librime,OpenCC,snappy,...}`，我們自己的專案要重新對應。 |
 | `third_party/xime-t9/` | `ximeiorg/Xime` | GPL-3.0 | 九鍵引擎：`librime-t9/`（`t9_state_machine`、`t9_digit_segment_strategy`、**`t9_digit_userdict`（九鍵專屬的用戶詞頻持久）**、`t9_right_commit_handler`、`t9_panel_state`）＋ Kotlin 側 `T9InputController`、`T9DisplayHelper`、`T9KeyboardLayout`、`T9KeyboardSwipeOverlay` |
 | `third_party/fcitx5-t9/` | `Arcns/fcitx5-android-t9` | LGPL-2.1 | 九鍵 UI 行為最貼 gboard 的一組：`T9SideRailUi`／`T9SideRailComponent`（**左側直式已按碼欄**）、`T9PinyinResolver`（即時消歧）、`T9Coordinator`／`T9SessionReducer`／`T9SessionBridge`、`SwipeSymbolDirection`（四方向滑動選字母）、`PopupPreset`（長按彈出）、`T9Keyboard`，外加兩支 androidTest（Hamster 佈局與長按彈出）當行為規格 |
 | `third_party/vertick-scel/` | `BurgerK1ng16/Vertick-IME` | GPL-3.0 | `.scel` 辨識與解析（`looksLikeScel()` 認魔數 0x40、小端解析）＋詞庫包下載匯入（zip＋sha256＋RSA）；另附一份 `weike_t9.schema.yaml` 當第二種九鍵方案寫法 |
