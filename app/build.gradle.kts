@@ -80,13 +80,11 @@ tasks.matching { it.name.startsWith("merge") && it.name.contains("Assets") }
 
 dependencies {
     implementation("androidx.core:core-ktx:1.17.0")
-    // BOM 2026.09.00 鎖的 material3 是 1.4.0，實查它的 classes.jar 裡
-    // MaterialShapes／MotionScheme.expressive()／ShapeDefaults.ExtraExtraLarge 都還是 internal
-    // （名字帶 $material3 後綴），外部叫不到。M3 Expressive 真正公開的那批在 1.5.x，
-    // 所以 material3 單獨指定，其餘（ui／foundation）仍走 BOM。
-    implementation(platform("androidx.compose:compose-bom:2026.09.00"))
+    // 不用 compose-bom：BOM 2026.09.00 鎖的是 material3 1.4.0，而實查 material3-android 1.4.0
+    // 的 classes.jar，MaterialShapes／MotionScheme.expressive() 都還是 internal（名字帶
+    // $material3 後綴），外部叫不到。M3 Expressive 真正公開的那批在 1.5.x，所以逐個標尖端版本。
+    implementation("androidx.compose.ui:ui:1.13.0-beta01")
+    implementation("androidx.compose.foundation:foundation:1.13.0-beta01")
     implementation("androidx.compose.material3:material3:1.5.0-beta01")
-    implementation("androidx.compose.ui:ui")
-    implementation("androidx.compose.foundation:foundation")
-    debugImplementation("androidx.compose.ui:ui-tooling")
+    debugImplementation("androidx.compose.ui:ui-tooling:1.13.0-beta01")
 }
