@@ -31,7 +31,9 @@ android {
             version = "3.31.6"
             // 整串 librime 依賴靜態鏈進 librime_jni.so，APK 裡只多這一個 .so。
             // ANDROID_PLATFORM 對齊 minSdk，lua 那個 ANDROID_PLATFORM>=24 的補丁因此不必打。
-            args += listOf(
+            // 注意只能這樣叫函數：AGP 的 CmakeFlags 對 arguments 只有 getter（`arguments += ...`
+            // 會編譯不過，CI 前兩輪就是紅在這裡），要傳參數得走 vararg 那個方法。
+            arguments(
                 "-DANDROID_STL=c++_static",
                 "-DANDROID_PLATFORM=android-26",
                 "-DANDROID_SUPPORT_FLEXIBLE_PAGE_SIZES=ON",
