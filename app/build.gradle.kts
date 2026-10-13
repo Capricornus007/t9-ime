@@ -10,7 +10,10 @@ plugins {
 // import_preset 與 import_tables，四個倉攤平才找得到。
 android {
     namespace = "com.capricornus.t9ime"
+    // Compose 1.13.0-beta01 那批 AAR 的 metadata 要求 compileSdk ≥ 37.1（實測 CI 報的），
+    // AGP 9 用 compileSdk＋compileSdkMinor 兩段表示。
     compileSdk = 37
+    compileSdkMinor = 1
 
     defaultConfig {
         applicationId = "com.capricornus.t9ime"
@@ -86,5 +89,8 @@ dependencies {
     implementation("androidx.compose.ui:ui:1.13.0-beta01")
     implementation("androidx.compose.foundation:foundation:1.13.0-beta01")
     implementation("androidx.compose.material3:material3:1.5.0-beta01")
+    // 掛 ViewTree owner 用的兩個套件：IME 不是 Activity，要自己當 lifecycle／savedState 的宿主。
+    implementation("androidx.lifecycle:lifecycle-runtime:2.11.0")
+    implementation("androidx.savedstate:savedstate:1.5.0")
     debugImplementation("androidx.compose.ui:ui-tooling:1.13.0-beta01")
 }
