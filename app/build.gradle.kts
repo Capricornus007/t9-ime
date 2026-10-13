@@ -17,6 +17,19 @@ android {
         versionCode = 1
         versionName = "0.2-librime"
         ndk { abiFilters += "arm64-v8a" }
+        // 編譯旗標只能掛在 defaultConfig 這邊：android 層那個 externalNativeBuild.cmake
+        // 是 Cmake 介面（只有 path／version），flags 在 CmakeFlags 介面裡，掛錯地方編不過。
+        // 整串 librime 依賴靜態鏈進 librime_jni.so，APK 裡只多這一個 .so。
+        // ANDROID_PLATFORM 對齊 minSdk，lua 那個 ANDROID_PLATFORM>=24 的補丁因此不必打。
+        externalNativeBuild {
+            cmake {
+                arguments(
+                    "-DANDROID_STL=c++_static",
+                    "-DANDROID_PLATFORM=android-26",
+                    "-DANDROID_SUPPORT_FLEXIBLE_PAGE_SIZES=ON",
+                )
+            }
+        }
     }
 
     buildTypes {
@@ -29,15 +42,6 @@ android {
         cmake {
             path = file("src/main/jni/CMakeLists.txt")
             version = "3.31.6"
-            // 整串 librime 依賴靜態鏈進 librime_jni.so，APK 裡只多這一個 .so。
-            // ANDROID_PLATFORM 對齊 minSdk，lua 那個 ANDROID_PLATFORM>=24 的補丁因此不必打。
-            // 注意只能這樣叫函數：AGP 的 CmakeFlags 對 arguments 只有 getter（`arguments += ...`
-            // 會編譯不過，CI 前兩輪就是紅在這裡），要傳參數得走 vararg 那個方法。
-            arguments(
-                "-DANDROID_STL=c++_static",
-                "-DANDROID_PLATFORM=android-26",
-                "-DANDROID_SUPPORT_FLEXIBLE_PAGE_SIZES=ON",
-            )
         }
     }
     ndkVersion = "27.3.13750724"
