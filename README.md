@@ -48,5 +48,7 @@ g++ -O0 -o /tmp/rime-t9/t9probe tools/t9probe.cpp -lrime && /tmp/rime-t9/t9probe
 
 ## 授權
 
-本倉自己寫的檔案採 **0BSD**（見 `LICENSE`）。從別處拿進來的檔案，來源與原始授權逐條記在
-`VENDORED.md`。
+本倉整體採 **TBWTFPL**（`THE BETTER WTFPL`，作者本人即本倉 owner，全文見 `LICENSE`，
+來源 <https://github.com/Capricornus007/tbwtfpl>）。該授權第 2 條明文無視其他授權檔的限制，
+所以 `third_party/` 底下那些原本帶 GPL／LGPL 的檔案照搬照用，不需要另走什麼合規程序；
+它們各自的原始授權檔仍留在目錄裡，只是為了讓人查得到東西從哪來，逐條記在 `VENDORED.md`。
