@@ -25,6 +25,8 @@ if(NOT EXISTS "${CMAKE_SOURCE_DIR}/boost")
   file(RENAME "boost-${BOOST_VERSION}" boost)
 endif()
 
+# vmd 是我們自己加的一項：librime 1.17 的 rime_api.cc 有 #include <boost/vmd/is_empty.hpp>，
+# 上游 Trime 這份清單沒有它（它的 librime 較舊），少了交叉編會在第一個來源檔就斷。
 set(BOOST_INCLUDE_LIBRARIES
     algorithm
     crc
@@ -35,6 +37,7 @@ set(BOOST_INCLUDE_LIBRARIES
     scope_exit
     signals2
     utility
-    uuid)
+    uuid
+    vmd)
 
 add_subdirectory(boost EXCLUDE_FROM_ALL)
