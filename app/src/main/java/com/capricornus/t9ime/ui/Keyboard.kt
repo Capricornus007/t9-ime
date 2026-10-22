@@ -22,6 +22,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -114,7 +115,7 @@ private fun CandidateStrip(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .height(52.dp)
+            .height(62.dp)
             // 候選列用比底板亮一階的顏色，兩層才分得出來，也不會像懸空。
             .background(MaterialTheme.colorScheme.surfaceContainerHigh)
             .padding(horizontal = 8.dp),
@@ -139,7 +140,7 @@ private fun CandidateStrip(
                 itemsIndexed(candidates) { index, word ->
                     Box(
                         modifier = Modifier
-                            .clip(MaterialTheme.shapes.full)
+                            .clip(CircleShape)
                             .background(MaterialTheme.colorScheme.surfaceContainerHighest)
                             .clickable { onCandidate(index) }
                             .padding(horizontal = 16.dp, vertical = 8.dp),
@@ -147,7 +148,7 @@ private fun CandidateStrip(
                     ) {
                         Text(
                             text = word,
-                            fontSize = 19.sp,
+                            fontSize = 22.sp,
                             color = MaterialTheme.colorScheme.onSurface,
                         )
                     }
@@ -171,7 +172,7 @@ private fun RowScope.DigitKey(spec: KeySpec, onClick: () -> Unit) {
     Box(
         modifier = Modifier
             .weight(1f)
-            .height(58.dp)
+            .height(76.dp)
             .scale(scale)
             .clip(MaterialTheme.shapes.medium)
             .background(
@@ -184,7 +185,7 @@ private fun RowScope.DigitKey(spec: KeySpec, onClick: () -> Unit) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Text(
                 text = spec.main,
-                fontSize = 22.sp,
+                fontSize = 26.sp,
                 fontWeight = FontWeight.Medium,
                 color = MaterialTheme.colorScheme.onSurface,
                 lineHeight = 24.sp,
@@ -192,8 +193,8 @@ private fun RowScope.DigitKey(spec: KeySpec, onClick: () -> Unit) {
             if (spec.legend.isNotEmpty()) {
                 Text(
                     text = spec.legend,
-                    fontSize = 10.sp,
-                    letterSpacing = 1.2.sp,
+                    fontSize = 12.sp,
+                    letterSpacing = 1.4.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     lineHeight = 12.sp,
                 )
@@ -220,7 +221,7 @@ private fun RowScope.FuncKey(
     Box(
         modifier = Modifier
             .weight(weight)
-            .height(54.dp)
+            .height(70.dp)
             .scale(scale)
             .clip(MaterialTheme.shapes.medium)
             .background(
@@ -235,7 +236,7 @@ private fun RowScope.FuncKey(
     ) {
         Text(
             text = hint.ifEmpty { label },
-            fontSize = if (hint.isNotEmpty()) 14.sp else 21.sp,
+            fontSize = if (hint.isNotEmpty()) 16.sp else 24.sp,
             fontWeight = if (hint.isNotEmpty()) FontWeight.Normal else FontWeight.Medium,
             color = when {
                 accent && !pressed -> MaterialTheme.colorScheme.onPrimary

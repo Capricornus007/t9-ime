@@ -28,7 +28,7 @@ jobs:
       # 版本要跟 app/build.gradle.kts 的 ndkVersion 與 externalNativeBuild.cmake.version 一致，
       # 對不上 AGP 會自己再抓一份、或者乾脆報錯。
       - name: 裝 NDK 與 CMake
-        run: yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "cmake;3.31.6" "ndk;27.3.13750724"
+        run: yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "cmake;3.31.6" "ndk;30.0.16248370"
 
       - uses: gradle/actions/setup-gradle@v4
         with:

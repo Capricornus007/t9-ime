@@ -53,7 +53,7 @@ android {
             version = "3.31.6"
         }
     }
-    ndkVersion = "27.3.13750724"
+    ndkVersion = "30.0.16248370"
 
     sourceSets.getByName("main").assets.srcDir(layout.buildDirectory.dir("rime-assets"))
 
@@ -92,5 +92,4 @@ dependencies {
     // 掛 ViewTree owner 用的兩個套件：IME 不是 Activity，要自己當 lifecycle／savedState 的宿主。
     implementation("androidx.lifecycle:lifecycle-runtime:2.11.0")
     implementation("androidx.savedstate:savedstate:1.5.0")
-    debugImplementation("androidx.compose.ui:ui-tooling:1.13.0-beta01")
 }
