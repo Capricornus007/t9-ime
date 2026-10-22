@@ -16,7 +16,13 @@ android {
     compileSdkMinor = 1
 
     defaultConfig {
-        applicationId = "com.capricornus.t9ime"
+        // 使用者裁定：這倉就是「Trime 的基礎上支持九鍵拼音」，包名直接用上游的。
+        // ⚠️ 代價（已知並接受）：與 F-Droid／GitHub 的 org.osfans.trime 是同一個包名，
+        //   兩邊憑證不同 ⇒ 手機上裝過正版 Trime 的話，`adb install -r` 會被
+        //   INSTALL_FAILED_UPDATE_INCOMPATIBLE 擋下，要先卸掉那個才裝得進這支。
+        //   `namespace` 維持 com.capricornus.t9ime：那只管 R 與 BuildConfig 的套裝名，
+        //   改它要連動搬整棵來源目錄與 AndroidManifest 的 .T9Service 相對名，不值。
+        applicationId = "org.osfans.trime"
         minSdk = 26
         targetSdk = 36
         versionCode = 1
