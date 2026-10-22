@@ -53,7 +53,12 @@ android {
             version = "3.31.6"
         }
     }
-    ndkVersion = "30.0.16248370"
+    // ⚠️ 不要抬到 NDK r30：CI 實測 run 39722307748 在 r30 下連結必紅——
+    //    `ld.lld: error: .../ndk/30.0.16248370/toolchains/llvm/prebuilt/linux-x86_64/lib/libunwind.so
+    //     is incompatible with aarch64linux`（r30 把**宿主**那顆 libunwind.so 塞進 aarch64 連結），
+    //    本倉與 vendored 依賴裡查無任何 `-lunwind`（`WITH_UNWIND` 本就是 OFF），是工具鏈自己帶進來的。
+    //    與 .github/workflows/build.yml 的 sdkmanager 那條**必須同號**，改一處就要改兩處。
+    ndkVersion = "27.3.13750724"
 
     sourceSets.getByName("main").assets.srcDir(layout.buildDirectory.dir("rime-assets"))
 

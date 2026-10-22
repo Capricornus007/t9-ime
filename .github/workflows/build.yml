@@ -27,8 +27,10 @@ jobs:
 
       # 版本要跟 app/build.gradle.kts 的 ndkVersion 與 externalNativeBuild.cmake.version 一致，
       # 對不上 AGP 會自己再抓一份、或者乾脆報錯。
+      # ⚠️ 這顆是 27.3 不是 r30：r30 下 librime 的 aarch64 連結會吃到 NDK 宿主端的
+      #    libunwind.so（ld.lld: incompatible with aarch64linux），run 39722307748 實測紅。
       - name: 裝 NDK 與 CMake
-        run: yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "cmake;3.31.6" "ndk;30.0.16248370"
+        run: yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "cmake;3.31.6" "ndk;27.3.13750724"
 
       - uses: gradle/actions/setup-gradle@v4
         with:
